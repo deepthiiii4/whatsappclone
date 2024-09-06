@@ -3,8 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
 import ConvexClientProvider from "@/providers/convex-client-provider";
+import { Toaster } from "react-hot-toast";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
-
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,9 +26,9 @@ export default function RootLayout({
 						<SignedOut>
 							<SignInButton />
 						</SignedOut>
-						<SignedIn>	{children}</SignedIn>
-					
-					
+						<SignedIn>{children}</SignedIn>
+						
+						<Toaster />
 					</ConvexClientProvider>
 				</ThemeProvider>
 			</body>
