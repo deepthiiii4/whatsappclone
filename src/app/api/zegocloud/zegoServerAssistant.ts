@@ -1,4 +1,4 @@
-import { createCipheriv } from "crypto";
+import { createCipheriv, randomBytes } from "crypto";
 
 enum ErrorCode {
 	success = 0, // "success"
@@ -8,45 +8,23 @@ enum ErrorCode {
 	effectiveTimeInSecondsInvalid = 6, // "effectiveTimeInSeconds invalid"
 }
 
-const enum KPrivilegeKey {
-	PrivilegeKeyLogin = 1,
-	PrivilegeKeyPublish = 2,
-}
-
-const enum KPrivilegeVal {
-	PrivilegeEnable = 1,
-	PrivilegeDisable = 0,
-}
-
-interface ErrorInfo {
-	errorCode: ErrorCode; // Error code from ErrorCode
-	errorMessage: string; // Detailed description of the error code
-}
-
-function RndNum(a: number, b: number) {
+function RndNum(a: number, b: number): number {
 	// Generate a random number within the range of a to b
 	return Math.ceil((a + (b - a)) * Math.random());
 }
 
 // Generate a random number within the range of int32
-function makeNonce() {
+function makeNonce(): number {
 	return RndNum(-2147483648, 2147483647);
 }
 
-function makeRandomIv(): string {
-	// Generate a random 16-character string
-	const str = "0123456789abcdefghijklmnopqrstuvwxyz";
-	const result = [];
-	for (let i = 0; i < 16; i++) {
-		const r = Math.floor(Math.random() * str.length);
-		result.push(str.charAt(r));
-	}
-	return result.join("");
+function makeRandomIv(): Buffer {
+	// Generate a random 16-byte string for IV
+	return randomBytes(16);
 }
 
-// Determine the algorithm based on the length of the key, only supports 16 24 32 bits
-function getAlgorithm(keyBase64: string): string {
-	const key = Buffer.from(keyBase64);
+// Determine the algorithm based on the length of the key, only supports 16, 24, or 32 bytes
+function getAlgorithm(key: Buffer): string {
 	switch (key.length) {
 		case 16:
 			return "aes-128-cbc";
@@ -60,14 +38,11 @@ function getAlgorithm(keyBase64: string): string {
 }
 
 // AES encryption, using mode: CBC/PKCS5Padding
-function aesEncrypt(plainText: string, key: string, iv: string): ArrayBuffer {
+function aesEncrypt(plainText: string, key: Buffer, iv: Buffer): Buffer {
 	const cipher = createCipheriv(getAlgorithm(key), key, iv);
 	cipher.setAutoPadding(true);
-	const encrypted = cipher.update(plainText);
-	const final = cipher.final();
-	const out = Buffer.concat([encrypted, final]);
-
-	return Uint8Array.from(out).buffer;
+	const encrypted = Buffer.concat([cipher.update(plainText, "utf8"), cipher.final()]);
+	return encrypted;
 }
 
 export function generateToken04(
@@ -115,35 +90,27 @@ export function generateToken04(
 		payload: payload || "",
 	};
 
-	// Convert token information to json
-	const plaintText = JSON.stringify(tokenInfo);
-	console.log("plain text: ", plaintText);
+	// Convert token information to JSON
+	const plainText = JSON.stringify(tokenInfo);
 
-	// A randomly generated 16-byte string used as the AES encryption vector, which is Base64 encoded with the ciphertext to generate the final token
-	const iv: string = makeRandomIv();
-	console.log("iv", iv);
+	// Generate a random IV
+	const iv = makeRandomIv();
 
 	// Encrypt
-	const encryptBuf = aesEncrypt(plaintText, secret, iv);
+	const keyBuffer = Buffer.from(secret, "utf8"); // Ensure the key is a Buffer
+	const encryptedBuf = aesEncrypt(plainText, keyBuffer, iv);
 
 	// Token binary splicing: expiration time + Base64(iv length + iv + encrypted information length + encrypted information)
-	const [b1, b2, b3] = [new Uint8Array(8), new Uint8Array(2), new Uint8Array(2)];
-	new DataView(b1.buffer).setBigInt64(0, BigInt(tokenInfo.expire), false);
-	new DataView(b2.buffer).setUint16(0, iv.length, false);
-	new DataView(b3.buffer).setUint16(0, encryptBuf.byteLength, false);
-	const buf = Buffer.concat([
-		Buffer.from(b1),
-		Buffer.from(b2),
-		Buffer.from(iv),
-		Buffer.from(b3),
-		Buffer.from(encryptBuf),
-	]);
-	const dv = new DataView(Uint8Array.from(buf).buffer);
-	// Package data
-	// console.log('-----------------');
-	// console.log('-------getBigInt64----------', dv.getBigInt64(0));
-	// console.log('-----------------');
-	// console.log('-------getUint16----------', dv.getUint16(8));
-	// console.log('-----------------');
-	return "04" + Buffer.from(dv.buffer).toString("base64");
+	const b1 = Buffer.alloc(8);
+	const b2 = Buffer.alloc(2);
+	const b3 = Buffer.alloc(2);
+
+	b1.writeBigUInt64BE(BigInt(tokenInfo.expire));
+	b2.writeUInt16BE(iv.length);
+	b3.writeUInt16BE(encryptedBuf.length);
+
+	const buf = Buffer.concat([b1, b2, iv, b3, encryptedBuf]);
+
+	// Encode to base64
+	return "04" + buf.toString("base64");
 }

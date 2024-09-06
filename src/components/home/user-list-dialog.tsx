@@ -21,10 +21,10 @@ import { useConversationStore } from "@/store/chat-store";
 
 const UserListDialog = () => {
 	const [selectedUsers, setSelectedUsers] = useState<Id<"users">[]>([]);
-	const [groupName, setGroupName] = useState("");
-	const [isLoading, setIsLoading] = useState(false);
+	const [groupName, setGroupName] = useState<string>("");
+	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [selectedImage, setSelectedImage] = useState<File | null>(null);
-	const [renderedImage, setRenderedImage] = useState("");
+	const [renderedImage, setRenderedImage] = useState<string>("");
 
 	const imgRef = useRef<HTMLInputElement>(null);
 	const dialogCloseRef = useRef<HTMLButtonElement>(null);
@@ -37,7 +37,7 @@ const UserListDialog = () => {
 	const { setSelectedConversation } = useConversationStore();
 
 	const handleCreateConversation = async () => {
-		if (selectedUsers.length === 0) return;
+		if (selectedUsers.length === 0 || !me?._id) return;
 		setIsLoading(true);
 		try {
 			const isGroup = selectedUsers.length > 1;
@@ -45,7 +45,7 @@ const UserListDialog = () => {
 			let conversationId;
 			if (!isGroup) {
 				conversationId = await createConversation({
-					participants: [...selectedUsers, me?._id!],
+					participants: [...selectedUsers, me._id],
 					isGroup: false,
 				});
 			} else {
@@ -53,16 +53,16 @@ const UserListDialog = () => {
 
 				const result = await fetch(postUrl, {
 					method: "POST",
-					headers: { "Content-Type": selectedImage?.type! },
-					body: selectedImage,
+					headers: { "Content-Type": selectedImage?.type || "" },
+					body: selectedImage || undefined,
 				});
 
 				const { storageId } = await result.json();
 
 				conversationId = await createConversation({
-					participants: [...selectedUsers, me?._id!],
+					participants: [...selectedUsers, me._id],
 					isGroup: true,
-					admin: me?._id!,
+					admin: me._id,
 					groupName,
 					groupImage: storageId,
 				});
@@ -74,15 +74,17 @@ const UserListDialog = () => {
 			setSelectedImage(null);
 
 			// TODO => Update a global state called "selectedConversation"
-			const conversationName = isGroup ? groupName : users?.find((user) => user._id === selectedUsers[0])?.name;
+			const selectedUser = users?.find((user) => user._id === selectedUsers[0]);
+			const conversationName = isGroup ? groupName : selectedUser?.name;
+			const conversationImage = isGroup ? renderedImage : selectedUser?.image;
 
 			setSelectedConversation({
 				_id: conversationId,
 				participants: selectedUsers,
 				isGroup,
-				image: isGroup ? renderedImage : users?.find((user) => user._id === selectedUsers[0])?.image,
+				image: conversationImage,
 				name: conversationName,
-				admin: me?._id!,
+				admin: me._id,
 			});
 		} catch (err) {
 			toast.error("Failed to create conversation");
@@ -93,9 +95,14 @@ const UserListDialog = () => {
 	};
 
 	useEffect(() => {
-		if (!selectedImage) return setRenderedImage("");
+		if (!selectedImage) {
+			setRenderedImage("");
+			return;
+		}
 		const reader = new FileReader();
-		reader.onload = (e) => setRenderedImage(e.target?.result as string);
+		reader.onload = (e) => {
+			setRenderedImage(e.target?.result as string);
+		};
 		reader.readAsDataURL(selectedImage);
 	}, [selectedImage]);
 
@@ -106,7 +113,6 @@ const UserListDialog = () => {
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
-					{/* TODO: <DialogClose /> will be here */}
 					<DialogClose ref={dialogCloseRef} />
 					<DialogTitle>USERS</DialogTitle>
 				</DialogHeader>
@@ -117,13 +123,12 @@ const UserListDialog = () => {
 						<Image src={renderedImage} fill alt='user image' className='rounded-full object-cover' />
 					</div>
 				)}
-				{/* TODO: input file */}
 				<input
 					type='file'
 					accept='image/*'
 					ref={imgRef}
 					hidden
-					onChange={(e) => setSelectedImage(e.target.files![0])}
+					onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
 				/>
 				{selectedUsers.length > 1 && (
 					<>
@@ -164,7 +169,7 @@ const UserListDialog = () => {
 								</AvatarFallback>
 							</Avatar>
 
-							<div className='w-full '>
+							<div className='w-full'>
 								<div className='flex items-center justify-between'>
 									<p className='text-md font-medium'>{user.name || user.email.split("@")[0]}</p>
 								</div>
@@ -178,9 +183,8 @@ const UserListDialog = () => {
 						onClick={handleCreateConversation}
 						disabled={selectedUsers.length === 0 || (selectedUsers.length > 1 && !groupName) || isLoading}
 					>
-						{/* spinner */}
 						{isLoading ? (
-							<div className='w-5 h-5 border-t-2 border-b-2  rounded-full animate-spin' />
+							<div className='w-5 h-5 border-t-2 border-b-2 rounded-full animate-spin' />
 						) : (
 							"Create"
 						)}
@@ -190,4 +194,5 @@ const UserListDialog = () => {
 		</Dialog>
 	);
 };
+
 export default UserListDialog;

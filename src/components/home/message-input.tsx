@@ -1,4 +1,4 @@
-import { Laugh, Mic, Plus, Send } from "lucide-react";
+import { Laugh, Mic, Send } from "lucide-react";
 import { Input } from "../ui/input";
 import { useState } from "react";
 import { Button } from "../ui/button";
@@ -21,11 +21,20 @@ const MessageInput = () => {
 	const handleSendTextMsg = async (e: React.FormEvent) => {
 		e.preventDefault();
 		try {
-			await sendTextMsg({ content: msgText, conversation: selectedConversation!._id, sender: me!._id });
+			await sendTextMsg({
+				content: msgText,
+				conversation: selectedConversation!._id,
+				sender: me!._id,
+			});
 			setMsgText("");
-		} catch (err: any) {
-			toast.error(err.message);
-			console.error(err);
+		} catch (err: unknown) {
+			if (err instanceof Error) {
+				toast.error(err.message);  // Now safe to access err.message
+				console.error(err);
+			} else {
+				toast.error("An unexpected error occurred");
+				console.error(err);
+			}
 		}
 	};
 
@@ -80,4 +89,5 @@ const MessageInput = () => {
 		</div>
 	);
 };
+
 export default MessageInput;

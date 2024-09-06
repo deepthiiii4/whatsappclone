@@ -1,14 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, RefObject } from "react";
 
 interface ComponentVisibleHook {
-	ref: React.RefObject<any>;
+	ref: RefObject<HTMLDivElement>;
 	isComponentVisible: boolean;
 	setIsComponentVisible: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export default function useComponentVisible(initialIsVisible: boolean): ComponentVisibleHook {
-	const [isComponentVisible, setIsComponentVisible] = useState(initialIsVisible);
-	const ref = useRef<any>(null);
+	const [isComponentVisible, setIsComponentVisible] = useState<boolean>(initialIsVisible);
+	const ref = useRef<HTMLDivElement>(null);
 
 	const handleClickOutside = (event: MouseEvent) => {
 		if (ref.current && !ref.current.contains(event.target as Node)) {
