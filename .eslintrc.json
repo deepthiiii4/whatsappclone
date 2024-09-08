@@ -4,8 +4,4 @@
     "react/no-unescaped-entities": "off",
     "@next/next/no-page-custom-font": "off"
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 3f73d085c7ef7d260bc7170ec08d787d7580862a
