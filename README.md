@@ -107,6 +107,3 @@ For more detailed deployment instructions, refer to the [Next.js deployment docu
 - [ZEGOCLOUD Documentation](https://www.zegocloud.com/docs) - Learn more about real-time messaging integration.
 - [OpenAI Documentation](https://beta.openai.com/docs/) - Learn more about integrating ChatGPT and DALL·E APIs.
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
