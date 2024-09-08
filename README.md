@@ -16,7 +16,7 @@ This is a full-stack WhatsApp Clone application built with Next.js. The applicat
 - **Next.js**: Frontend framework.
 - **Clerk**: User authentication and management.
 - **Convex**: Serverless backend for real-time data.
-- **ZEGOCLOUD**: Real-time messaging platform.
+- **ZEGOCLOUD**: Real-time video call platform.
 - **OpenAI**: ChatGPT and DALL·E APIs for advanced features.
 - **Node.js**: Backend runtime.
 - **TypeScript**: Static typing.
@@ -77,9 +77,7 @@ To run the project locally, follow these steps:
 - **app/**: Contains the Next.js application pages.
 - **components/**: Reusable UI components.
 - **lib/**: Configuration files and helper functions.
-- **pages/**: API routes and middleware.
 - **public/**: Static files like images and fonts.
-- **styles/**: CSS and SCSS files for styling.
 - **utils/**: Utility functions used throughout the app.
 
 ## Authentication
